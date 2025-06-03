@@ -1,7 +1,7 @@
 {
     "name": "joe1992w/envsemble",
-    "description": "A repository for merging multiple .env files into a single .env file.",
-    "keywords": ["php", "laravel", "package", "env"],
+    "description": "A Laravel package for merging multiple .env files with patch support and advanced features.",
+    "keywords": ["php", "laravel", "package", "env", "environment", "merge", "patch"],
     "license": "MIT",
     "authors": [
         {
@@ -10,7 +10,9 @@
         }
     ],
     "require": {
-        "php": "^8.2.0"
+        "php": "^8.2.0",
+        "illuminate/console": "^10.0|^11.0",
+        "illuminate/support": "^10.0|^11.0"
     },
     "require-dev": {
         "laravel/pint": "^1.13.7",
@@ -21,12 +23,20 @@
     },
     "autoload": {
         "psr-4": {
-            "NunoMaduro\\SkeletonPhp\\": "src/"
+            "JoeWare\\Envsemble\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
+        }
+    },
+    "bin": ["bin/envsemble"],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "JoeWare\\Envsemble\\EnvsembleServiceProvider"
+            ]
         }
     },
     "minimum-stability": "stable",

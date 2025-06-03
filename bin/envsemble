@@ -1,0 +1,147 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Envsemble CLI - Standalone Environment File Merger
+ * 
+ * This is a standalone CLI tool that works outside of Laravel applications.
+ * For Laravel apps, use: php artisan env:build
+ */
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use JoeWare\Envsemble\EnvMerger;
+
+// Parse command line arguments
+$options = getopt('', [
+    'base:',
+    'patches:',
+    'out:',
+    'dry-run',
+    'no-comments',
+    'squash',
+    'help'
+]);
+
+if (isset($options['help']) || empty($options)) {
+    echo "Envsemble - Environment File Merger\n";
+    echo "====================================\n\n";
+    echo "Usage: php envsemble [options]\n\n";
+    echo "Options:\n";
+    echo "  --base=FILE        Path to the base .env file (required)\n";
+    echo "  --patches=DIR      Directory containing patch files (required)\n";
+    echo "  --out=FILE         Output file path (required)\n";
+    echo "  --dry-run          Preview changes without writing files\n";
+    echo "  --no-comments      Exclude source comments from output\n";
+    echo "  --squash           Combine all files and remove patches\n";
+    echo "  --help             Show this help message\n\n";
+    echo "Examples:\n";
+    echo "  php envsemble --base=.env.base --patches=env-patches/ --out=.env.generated\n";
+    echo "  php envsemble --base=.env.base --patches=env-patches/ --out=.env.generated --dry-run\n";
+    echo "  php envsemble --base=.env.base --patches=env-patches/ --out=.env.new --squash\n\n";
+    exit(0);
+}
+
+// Validate required options
+$baseFile = $options['base'] ?? null;
+$patchesDir = $options['patches'] ?? null;
+$outputFile = $options['out'] ?? null;
+
+if (!$baseFile || !$patchesDir || !$outputFile) {
+    echo "❌ Error: Missing required options. Use --help for usage information.\n";
+    exit(1);
+}
+
+$dryRun = isset($options['dry-run']);
+$includeComments = !isset($options['no-comments']);
+$squash = isset($options['squash']);
+
+// Resolve paths
+$baseFile = realpath($baseFile) ?: $baseFile;
+$patchesDir = realpath($patchesDir) ?: $patchesDir;
+
+echo "🚀 Starting environment file merge...\n\n";
+
+try {
+    $merger = new EnvMerger();
+
+    if ($squash) {
+        echo "⚠️  SQUASH MODE: This will remove all patch files after merging!\n";
+        echo "Are you sure you want to continue? (y/n): ";
+        $handle = fopen("php://stdin", "r");
+        $line = fgets($handle);
+        fclose($handle);
+        
+        if (trim(strtolower($line)) !== 'y') {
+            echo "Operation cancelled.\n";
+            exit(0);
+        }
+        
+        $result = $merger->squash($baseFile, $patchesDir, $outputFile);
+        echo "✅ Files squashed successfully!\n";
+    } else {
+        $result = $merger->merge($baseFile, $patchesDir, $includeComments);
+        
+        if (!$dryRun) {
+            $output = $merger->generateOutput($result, $includeComments);
+            file_put_contents($outputFile, $output);
+            echo "✅ Environment file generated: {$outputFile}\n";
+        } else {
+            echo "🔍 DRY RUN MODE - No files will be written\n";
+        }
+    }
+
+    // Display report
+    echo "\n📊 Merge Report:\n";
+    echo "┌─────────────────────┬───────┐\n";
+    echo "│ Metric              │ Count │\n";
+    echo "├─────────────────────┼───────┤\n";
+    printf("│ %-19s │ %5d │\n", "Base file keys", $result->getBaseKeysCount());
+    printf("│ %-19s │ %5d │\n", "Patch files processed", $result->getPatchFilesCount());
+    printf("│ %-19s │ %5d │\n", "Keys added", $result->getAddedKeysCount());
+    printf("│ %-19s │ %5d │\n", "Keys modified", $result->getModifiedKeysCount());
+    printf("│ %-19s │ %5d │\n", "Keys deleted", $result->getDeletedKeysCount());
+    printf("│ %-19s │ %5d │\n", "Final output keys", $result->getKeysCount());
+    echo "└─────────────────────┴───────┘\n\n";
+
+    if (!empty($result->getAddedKeys())) {
+        echo "➕ Added keys: " . implode(', ', $result->getAddedKeys()) . "\n";
+    }
+
+    if (!empty($result->getModifiedKeys())) {
+        echo "🔄 Modified keys: " . implode(', ', $result->getModifiedKeys()) . "\n";
+    }
+
+    if (!empty($result->getDeletedKeys())) {
+        echo "🗑️  Deleted keys: " . implode(', ', $result->getDeletedKeys()) . "\n";
+    }
+
+    $report = $result->getReport();
+    echo "\n📁 Files processed:\n";
+    echo "   Base: {$report['base_file']}\n";
+    foreach ($report['patch_files'] as $patchFile) {
+        echo "   Patch: {$patchFile}\n";
+    }
+
+    if (!$dryRun) {
+        $efficiency = $result->getBaseKeysCount() > 0 
+            ? round(($result->getKeysCount() / $result->getBaseKeysCount()) * 100, 1)
+            : 0;
+        
+        echo "\n📈 Efficiency: {$efficiency}% keys retained/added from base\n";
+    }
+
+    if ($dryRun) {
+        echo "\n📋 Preview of output:\n";
+        echo "─────────────────────────────────────\n";
+        $output = $merger->generateOutput($result, $includeComments);
+        echo $output;
+        echo "─────────────────────────────────────\n";
+    }
+
+    echo "\n🎉 Operation completed successfully!\n";
+
+} catch (Exception $e) {
+    echo "❌ Error: {$e->getMessage()}\n";
+    exit(1);
+}
