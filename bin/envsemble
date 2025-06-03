@@ -24,8 +24,15 @@ $options = getopt('', [
 ]);
 
 if (isset($options['help']) || empty($options)) {
-    echo "Envsemble - Environment File Merger\n";
-    echo "====================================\n\n";
+
+    echo '    ______                                     __     __    ' . PHP_EOL;
+    echo '   / ____/____  _   __ _____ ___   ____ ___   / /_   / /___ ' . PHP_EOL;
+    echo '  / __/  / __ \| | / // ___// _ \ / __ `__ \ / __ \ / // _ \ ' . PHP_EOL;
+    echo ' / /___ / / / /| |/ /(__  )/  __// / / / / // /_/ // //  __/' . PHP_EOL;
+    echo '/_____//_/ /_/ |___//____/ \___//_/ /_/ /_//_.___//_/ \___/ ' . PHP_EOL;
+    echo PHP_EOL;                                     
+    echo "Environment File Merger\n";
+    echo "=======================\n\n";
     echo "Usage: php envsemble [options]\n\n";
     echo "Options:\n";
     echo "  --base=FILE        Path to the base .env file (required)\n";

@@ -1,5 +1,9 @@
 # Envsemble
 
+<div align="center">
+  <img src="docs/images/logo.png" alt="Envsemble Logo" width="200">
+</div>
+
 **A powerful Laravel package for merging multiple .env files with patch support and advanced features.**
 
 Envsemble allows you to maintain a base environment configuration and apply targeted patches for different environments, features, or deployment scenarios. Perfect for managing complex Laravel applications with multiple deployment targets.
