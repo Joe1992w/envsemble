@@ -25,9 +25,15 @@ class BuildEnvCommand extends Command
         $baseFile = $this->option('base');
         $patchesDir = $this->option('patches');
         $outputFile = $this->option('out');
-        $dryRun = $this->option('dry-run');
-        $includeComments = ! $this->option('no-comments');
-        $squash = $this->option('squash');
+        $dryRun = (bool) $this->option('dry-run');
+        $includeComments = ! (bool) $this->option('no-comments');
+        $squash = (bool) $this->option('squash');
+
+        if (! is_string($baseFile) || ! is_string($patchesDir) || ! is_string($outputFile)) {
+            $this->error('Invalid option types. --base, --patches, and --out must be strings.');
+
+            return Command::FAILURE;
+        }
 
         // Validate required options
         if (! $baseFile || ! $patchesDir || ! $outputFile) {

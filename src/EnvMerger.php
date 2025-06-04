@@ -11,6 +11,9 @@ class EnvMerger
 {
     public const DELETE_MARKER = '__DELETE__';
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $mergeReport = [];
 
     public function merge(string $baseFilePath, string $patchDirectory, bool $includeComments = true): EnvMergeResult
@@ -100,7 +103,7 @@ class EnvMerger
         foreach ($variables as $key => $data) {
             $line = $key.'='.$this->escapeValue($data['value']);
 
-            if ($includeComments && $data['source']) {
+            if ($includeComments && isset($data['source'])) {
                 $line .= ' # from: '.$data['source'];
             }
 
@@ -127,6 +130,9 @@ class EnvMerger
         return $result;
     }
 
+    /**
+     * @return array<string, array{value: string, comment?: string|null}>
+     */
     private function parseEnvFile(string $filePath): array
     {
         $variables = [];
@@ -139,8 +145,11 @@ class EnvMerger
         foreach ($lines as $line) {
             $line = trim($line);
 
-            // Skip comments and empty lines
-            if ($line === '' || str_starts_with($line, '#')) {
+            if ($line === '') {
+                continue;
+            }
+
+            if (str_starts_with($line, '#')) {
                 continue;
             }
 
@@ -167,6 +176,9 @@ class EnvMerger
         return $variables;
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function getPatchFiles(string $directory): array
     {
         $files = glob($directory.'/*.env');
@@ -221,6 +233,9 @@ class EnvMerger
         $this->mergeReport = [];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getLastReport(): array
     {
         return $this->mergeReport;
