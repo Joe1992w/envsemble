@@ -26,12 +26,13 @@ class BuildEnvCommand extends Command
         $patchesDir = $this->option('patches');
         $outputFile = $this->option('out');
         $dryRun = $this->option('dry-run');
-        $includeComments = !$this->option('no-comments');
+        $includeComments = ! $this->option('no-comments');
         $squash = $this->option('squash');
 
         // Validate required options
-        if (!$baseFile || !$patchesDir || !$outputFile) {
+        if (! $baseFile || ! $patchesDir || ! $outputFile) {
             $this->error('Missing required options. Please provide --base, --patches, and --out.');
+
             return Command::FAILURE;
         }
 
@@ -44,21 +45,22 @@ class BuildEnvCommand extends Command
         $this->newLine();
 
         try {
-            $merger = new EnvMerger();
+            $merger = new EnvMerger;
 
             if ($squash) {
                 $this->warn('⚠️  SQUASH MODE: This will remove all patch files after merging!');
-                if (!$this->confirm('Are you sure you want to continue?')) {
+                if (! $this->confirm('Are you sure you want to continue?')) {
                     $this->info('Operation cancelled.');
+
                     return Command::SUCCESS;
                 }
-                
+
                 $result = $merger->squash($baseFile, $patchesDir, $outputFile);
                 $this->info('✅ Files squashed successfully!');
             } else {
                 $result = $merger->merge($baseFile, $patchesDir, $includeComments);
-                
-                if (!$dryRun) {
+
+                if (! $dryRun) {
                     $output = $merger->generateOutput($result, $includeComments);
                     file_put_contents($outputFile, $output);
                     $this->info("✅ Environment file generated: {$outputFile}");
@@ -82,6 +84,7 @@ class BuildEnvCommand extends Command
 
         } catch (\Exception $e) {
             $this->error("❌ Error: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }
@@ -90,9 +93,9 @@ class BuildEnvCommand extends Command
     {
         $this->newLine();
         $this->info('📊 Merge Report:');
-        
+
         $report = $result->getReport();
-        
+
         $this->table(
             ['Metric', 'Count'],
             [
@@ -105,19 +108,19 @@ class BuildEnvCommand extends Command
             ]
         );
 
-        if (!empty($result->getAddedKeys())) {
+        if ($result->getAddedKeys() !== []) {
             $this->newLine();
-            $this->info('➕ Added keys: ' . implode(', ', $result->getAddedKeys()));
+            $this->info('➕ Added keys: '.implode(', ', $result->getAddedKeys()));
         }
 
-        if (!empty($result->getModifiedKeys())) {
+        if ($result->getModifiedKeys() !== []) {
             $this->newLine();
-            $this->info('🔄 Modified keys: ' . implode(', ', $result->getModifiedKeys()));
+            $this->info('🔄 Modified keys: '.implode(', ', $result->getModifiedKeys()));
         }
 
-        if (!empty($result->getDeletedKeys())) {
+        if ($result->getDeletedKeys() !== []) {
             $this->newLine();
-            $this->info('🗑️  Deleted keys: ' . implode(', ', $result->getDeletedKeys()));
+            $this->info('🗑️  Deleted keys: '.implode(', ', $result->getDeletedKeys()));
         }
 
         $this->newLine();
@@ -127,11 +130,11 @@ class BuildEnvCommand extends Command
             $this->line("   Patch: {$patchFile}");
         }
 
-        if (!$dryRun) {
-            $efficiency = $result->getBaseKeysCount() > 0 
+        if (! $dryRun) {
+            $efficiency = $result->getBaseKeysCount() > 0
                 ? round(($result->getKeysCount() / $result->getBaseKeysCount()) * 100, 1)
                 : 0;
-            
+
             $this->newLine();
             $this->info("📈 Efficiency: {$efficiency}% keys retained/added from base");
         }
@@ -142,7 +145,11 @@ class BuildEnvCommand extends Command
         if (str_starts_with($path, '/')) {
             return $path;
         }
-        
-        return getcwd() . '/' . ltrim($path, './');
+
+        if (str_starts_with($path, './')) {
+            $path = substr($path, 2);
+        }
+
+        return getcwd().'/'.$path;
     }
 }
