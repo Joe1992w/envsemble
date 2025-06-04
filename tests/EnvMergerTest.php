@@ -100,6 +100,18 @@ describe('EnvMerger', function () {
         expect($result->getVariableValue('APP_KEY'))->toBe('secret key with "quotes"');
     });
 
+    it('parses inline comments', function () {
+        $baseContent = 'APP_NAME=MyApp # primary app';
+        $baseFile = $this->tempDir.'/.env.base';
+        file_put_contents($baseFile, $baseContent);
+
+        $result = $this->merger->merge($baseFile, $this->tempDir.'/patches');
+        $variable = $result->getVariable('APP_NAME');
+
+        expect($variable['value'])->toBe('MyApp');
+        expect($variable['comment'])->toBe('primary app');
+    });
+
     it('generates output with source comments', function () {
         // Base file
         $baseContent = "APP_NAME=MyApp\nDB_HOST=localhost";

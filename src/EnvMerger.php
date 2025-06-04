@@ -138,25 +138,28 @@ class EnvMerger
 
         foreach ($lines as $line) {
             $line = trim($line);
+
             // Skip comments and empty lines
-            if ($line === '') {
-                continue;
-            }
-            if ($line === '0') {
-                continue;
-            }
-            if (str_starts_with($line, '#')) {
+            if ($line === '' || str_starts_with($line, '#')) {
                 continue;
             }
 
-            // Parse KEY=VALUE format
             if (preg_match('/^([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/i', $line, $matches)) {
                 $key = $matches[1];
-                $value = $this->unescapeValue($matches[2]);
+                $rawValue = $matches[2];
+                $comment = null;
+
+                if (! $this->isQuoted($rawValue) && str_contains($rawValue, '#')) {
+                    [$rawValue, $comment] = explode('#', $rawValue, 2);
+                    $rawValue = rtrim($rawValue);
+                    $comment = trim($comment);
+                }
+
+                $value = $this->unescapeValue($rawValue);
 
                 $variables[$key] = [
                     'value' => $value,
-                    'comment' => null,
+                    'comment' => $comment,
                 ];
             }
         }
@@ -204,6 +207,13 @@ class EnvMerger
         $value = str_replace('\\"', '"', $value);
 
         return str_replace("\\'", "'", $value);
+    }
+
+    private function isQuoted(string $value): bool
+    {
+        return
+            (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+            (str_starts_with($value, "'") && str_ends_with($value, "'"));
     }
 
     private function resetReport(): void
